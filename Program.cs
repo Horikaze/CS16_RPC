@@ -1,6 +1,5 @@
 ﻿using DiscordRPC;
 using Swed32;
-using System.Text;
 
 namespace DiscordGameIntegration
 {
@@ -29,6 +28,8 @@ namespace DiscordGameIntegration
                 IntPtr mapAddress = swed.ReadPointer(moduleBase, 0x000B587C) + 0x4;
                 IntPtr nickAddress = swed.ReadPointer(moduleBase, 0x00019B8C) + 0x64;
                 IntPtr IPAddress = swed.ReadPointer(moduleBase, 0x00024BA0);
+
+                System.Console.WriteLine(swed);
 
                 string currentMap = "";
                 string currentNick = "";
@@ -84,7 +85,9 @@ namespace DiscordGameIntegration
         static string ReadString(Swed swed, IntPtr address, int size)
         {
             byte[] bytes = swed.ReadBytes(address, size);
-            return Encoding.UTF8.GetString(bytes).TrimEnd('\0');
+            return System.Text.Encoding.Default.GetString(bytes);
+
+
         }
 
         static string SliceString(string input, char startChar, char endChar)
