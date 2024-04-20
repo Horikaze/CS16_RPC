@@ -1,6 +1,6 @@
 ﻿using DiscordRPC;
 using Swed32;
-
+using System.Diagnostics;
 namespace DiscordGameIntegration
 {
     public class Program
@@ -23,13 +23,22 @@ namespace DiscordGameIntegration
                     }
                 });
 
+
+                // Get all processes with the specified name
+                Process[] processes = Process.GetProcessesByName("hl");
+
+                if (processes.Length <= 0)
+                {
+                    throw new Exception("hl.exe not found.");
+                }
+
+
                 Swed swed = new("hl");
                 IntPtr moduleBase = swed.GetModuleBase("hw.dll");
                 IntPtr mapAddress = swed.ReadPointer(moduleBase, 0x000B587C) + 0x4;
                 IntPtr nickAddress = swed.ReadPointer(moduleBase, 0x00019B8C) + 0x64;
                 IntPtr IPAddress = swed.ReadPointer(moduleBase, 0x00024BA0);
 
-                System.Console.WriteLine(swed);
 
                 string currentMap = "";
                 string currentNick = "";
