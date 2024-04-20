@@ -1,5 +1,6 @@
 ﻿using DiscordRPC;
 using Swed32;
+using System.Text.RegularExpressions;
 using System.Diagnostics;
 namespace DiscordGameIntegration
 {
@@ -7,66 +8,84 @@ namespace DiscordGameIntegration
     {
         static void Main(string[] args)
         {
-            using (DiscordRpcClient client = new DiscordRpcClient("1230499422404739183"))
+
+            static string GetNamePropertyValue(string filePath)
             {
-                client.Initialize();
-
-                client.SetPresence(new RichPresence()
+                if (!File.Exists(filePath))
                 {
-                    Details = "Playing on map: ",
-                    State = "Nickname: ",
-                    Timestamps = Timestamps.Now,
-                    Assets = new Assets()
-                    {
-                        LargeImageKey = "logo",
-                        LargeImageText = "Counter-Strike 1.6",
-                    }
-                });
-
-
-                // Get all processes with the specified name
-                Process[] processes = Process.GetProcessesByName("hl");
-
-                if (processes.Length <= 0)
-                {
-                    throw new Exception("hl.exe not found.");
+                    return "";
                 }
-
-
-                Swed swed = new("hl");
-                IntPtr moduleBase = swed.GetModuleBase("hw.dll");
-                IntPtr mapAddress = swed.ReadPointer(moduleBase, 0x000B587C) + 0x4;
-                IntPtr nickAddress = swed.ReadPointer(moduleBase, 0x00019B8C) + 0x64;
-                IntPtr IPAddress = swed.ReadPointer(moduleBase, 0x00024BA0);
-
-
-                string currentMap = "";
-                string currentNick = "";
-                string currentIP = "";
-
-                try
+                string[] lines = File.ReadAllLines(filePath);
+                string pattern = @"^\s*name\s*""([^""]*)""";
+                foreach (string line in lines)
                 {
+                    Match match = Regex.Match(line, pattern);
+
+                    if (match.Success)
+                    {
+                        return match.Groups[1].Value;
+                    }
+                }
+                return "";
+            }
+            try
+            {
+                using (DiscordRpcClient client = new DiscordRpcClient("1230499422404739183"))
+                {
+                    // Get all processes with the specified name
+                    Process[] processes = Process.GetProcessesByName("hl");
+
+                    if (processes.Length <= 0)
+                    {
+                        throw new Exception("hl.exe not found.");
+                    }
+
+
+                    Swed swed = new("hl");
+                    IntPtr moduleBase = swed.GetModuleBase("hw.dll");
+                    IntPtr mapAddress = swed.ReadPointer(moduleBase, 0x000B587C) + 0x4;
+                    IntPtr IPAddress = swed.ReadPointer(moduleBase, 0x00024BA0);
+
+                    string gameCfgPath = processes[0].MainModule!.FileName.Replace("\\hl.exe", "") + "\\cstrike\\config.cfg";
+
+                    string currentMap = "";
+                    string currentNick = GetNamePropertyValue(gameCfgPath);
+                    string currentIP = "";
+
+                    client.Initialize();
+                    client.SetPresence(new RichPresence()
+                    {
+                        Details = "Playing on map: ",
+                        State = $"Nickname: {currentNick}",
+                        Timestamps = Timestamps.Now,
+                        Assets = new Assets()
+                        {
+                            LargeImageKey = "logo",
+                            LargeImageText = "Counter-Strike 1.6",
+                        }
+                    });
+
+
                     while (true)
                     {
-                        UpdatePresence(swed, client, mapAddress, nickAddress, IPAddress, ref currentMap, ref currentNick, ref currentIP);
+                        UpdatePresence(swed, client, mapAddress, IPAddress, ref currentMap, ref currentNick, ref currentIP);
                         Thread.Sleep(1000);
                     }
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error: {ex.Message}");
-                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                Console.ReadLine();
             }
         }
 
-        static void UpdatePresence(Swed swed, DiscordRpcClient client, IntPtr mapAddress, IntPtr nickAddress, IntPtr IPAddress, ref string currentMap, ref string currentNick, ref string currentIP)
+        static void UpdatePresence(Swed swed, DiscordRpcClient client, IntPtr mapAddress, IntPtr IPAddress, ref string currentMap, ref string currentNick, ref string currentIP)
         {
             string mapString = ReadString(swed, mapAddress, 16);
-            string nickString = ReadString(swed, nickAddress, 32);
             string IPString = ReadString(swed, IPAddress, 32);
 
-            string map = SliceString(mapString, '/', '.');
-            string nick = SliceNick(nickString);
+            string map = SliceMap(mapString, '/', '.');
             string IP = SliceIP(IPString);
 
             if (currentIP != IP)
@@ -82,13 +101,6 @@ namespace DiscordGameIntegration
                 client.UpdateState($"Nickname: {currentNick} Map: {currentMap}");
                 Console.WriteLine("Updated map");
             }
-
-            if (currentNick != nick)
-            {
-                currentNick = nick;
-                client.UpdateState($"Nickname: {currentNick} Map: {currentMap}");
-                Console.WriteLine("Updated nick");
-            }
         }
 
         static string ReadString(Swed swed, IntPtr address, int size)
@@ -99,7 +111,7 @@ namespace DiscordGameIntegration
 
         }
 
-        static string SliceString(string input, char startChar, char endChar)
+        static string SliceMap(string input, char startChar, char endChar)
         {
             int startIndex = input.IndexOf(startChar);
             int endIndex = input.IndexOf(endChar);
