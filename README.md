@@ -15,4 +15,4 @@
 ```
  * Run app ```bin\Release\net8.0\win-x86\publish\csrpc.exe```
 ## Notes
-Disable your original RPC in Discord Settings-Registered Games and disable detection for Half-life
+Disable your original RPC for Half-life in Discord under ``Settings-Registered Games``
