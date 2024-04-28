@@ -14,3 +14,5 @@
      $ dotnet publish -r win-x86 -c Release
 ```
  * Run app ```bin\Release\net8.0\win-x86\publish\csrpc.exe```
+## Notes
+Disable your original RPC in Discord Settings-Registered Games and disable detection for Half-life
