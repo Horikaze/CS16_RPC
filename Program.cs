@@ -84,7 +84,7 @@ namespace DiscordGameIntegration
         {
             string mapString = ReadString(swed, mapAddress, 16);
             string IPString = ReadString(swed, IPAddress, 32);
-
+            System.Console.WriteLine(mapString);
             string map = SliceMap(mapString, '/', '.');
             string IP = SliceIP(IPString);
 
@@ -107,8 +107,6 @@ namespace DiscordGameIntegration
         {
             byte[] bytes = swed.ReadBytes(address, size);
             return System.Text.Encoding.Default.GetString(bytes);
-
-
         }
 
         static string SliceMap(string input, char startChar, char endChar)
@@ -122,18 +120,8 @@ namespace DiscordGameIntegration
             }
             else
             {
-                return "";
+                return "de_dust2";
             }
-        }
-
-        static string SliceNick(string input)
-        {
-
-            string[] sliced = input.Split('\\');
-            string nick = sliced[1];
-
-            return nick;
-
         }
         static string SliceIP(string input)
         {
